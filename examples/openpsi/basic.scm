@@ -65,13 +65,7 @@
 ))
 
 (Member
-	(psi-rule
-		context-foo
-		action-foo
-		goal-foo
-		(stv 0.9 1)
-		(demand-foo)
-	)
+	(psi-rule context-foo action-foo goal-foo (stv 0.9 1) (demand-foo))
 	(Concept "demo rule")
 )
 
@@ -96,11 +90,13 @@
 ; then sleep for three seconds.  The loop repeats until the loop count
 ; reaches zero.
 (define (step-psi n)
-	(display "\n=================== Stepping psi one step\n")
-	(psi-step (demand-foo))
-    (psi-step (demand-bar))
-	(sleep 3)
-	(if (< 0 n) (step-psi (- n 1))))
+; 	(display "\n=================== Stepping psi one step\n")
+; 	(psi-step (demand-foo))
+;     (psi-step (demand-bar))
+; 	(sleep 3)
+; 	(if (< 0 n) (step-psi (- n 1))))
 
-(step-psi 4)
-(display "Done running psi\n")
+; (step-psi 4)
+; (display "Done running psi\n")
+
+(psi-step (demand-foo))
