@@ -2,7 +2,8 @@
 
 Commander is an opencog integration framework , it bind openpsi rule engine with your business logic.
 
-TODO
-1. SocketIO Server
-2. load rules from disk , auto reload
-3. examples
+TODO List:
+- [x] SocketIO Server
+- [ ] socket msg to scm integration
+- [ ] load rules from disk , auto reload
+- [ ] examples
