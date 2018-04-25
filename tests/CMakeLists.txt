@@ -39,6 +39,7 @@ IF (CXXTEST_FOUND)
         ADD_SUBDIRECTORY (pln_old)
 
         ADD_SUBDIRECTORY (openpsi)
+        ADD_SUBDIRECTORY (commander)
 
     ENDIF (HAVE_ATOMSPACE)
 
