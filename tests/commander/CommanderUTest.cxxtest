@@ -1,0 +1,95 @@
+/*
+ * @file tests/planning/CommanderUTest.cxxtest
+ *
+ * Copyright (C) 2016 OpenCog Foundation
+ * All Rights Reserved
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License v3 as
+ * published by the Free Software Foundation and including the exceptions
+ * at http://opencog.org/wiki/Licenses
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program; if not, write to:
+ * Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+#include <cxxtest/TestSuite.h>
+
+#include <opencog/atomspace/AtomSpace.h>
+#include <opencog/guile/SchemeEval.h>
+#include <opencog/util/Logger.h>
+#include <opencog/truthvalue/TruthValue.h>
+
+using namespace opencog;
+
+#define COMMANDER_TEST_PATH PROJECT_SOURCE_DIR "/tests/openpsi"
+#define CHKERR \
+    TSM_ASSERT("Caught scm error during eval", \
+        (false == _scm->eval_error()));
+
+class CommanderUTest : public CxxTest::TestSuite
+{
+private:
+    AtomSpace* _as;
+    SchemeEval* _scm;
+
+public:
+    CommanderUTest()
+    {
+        _as = new AtomSpace();
+        _scm = new SchemeEval(_as);
+
+        // The scheme environment is reset between each test.
+        // Configure scheme load-paths that are common for all tests.
+        // _scm->eval("(add-to-load-path \"/usr/local/share/opencog/scm\")");
+        // CHKERR
+
+        // // Load required modules for testing and populate the atomspace
+        // _scm->eval("(use-modules (opencog) (opencog openpsi))");
+        // CHKERR
+        // _scm->eval("(load \"" OPENPSI_TEST_PATH "/rules.scm\")");
+        // CHKERR
+
+        logger().set_level(Logger::DEBUG);
+        logger().set_print_level_flag(true);
+        logger().set_print_to_stdout_flag(true);
+    }
+
+    ~CommanderUTest()
+    {
+        // Clean Up
+        delete _as;
+        _as = nullptr;
+        delete _scm;
+        _scm = nullptr;
+
+        // Erase the log file if no assertions failed
+        if(!CxxTest::TestTracker::tracker().suiteFailed())
+            std::remove(logger().get_filename().c_str());
+    }
+
+    // Each test continuese from the state created by the previous one.
+    void setUp() {}
+    void tearDown() {}
+
+    // Check the ctest foo?
+    void test_foo()
+    {
+        logger().info("BEGIN TEST: %s", __FUNCTION__);
+
+        CHKERR
+        TSM_ASSERT_EQUALS("Expected `#t`", 1 , 1);
+
+        logger().info("END TEST: %s", __FUNCTION__);
+    }
+
+   
+
+};

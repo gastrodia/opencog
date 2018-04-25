@@ -7,7 +7,6 @@ ADD_GUILE_MODULE (FILES
 	MODULE_DESTINATION "${DATADIR}/scm/opencog/commander"
 )
 
-ADD_SUBDIRECTORY (dynamics)
 
 ADD_LIBRARY (commander SHARED
 	OpenPsiImplicator.cc
