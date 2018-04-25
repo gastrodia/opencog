@@ -15,6 +15,12 @@ const vm = new Vue({
     }
 })
 
+var methods = {
+    foo:function(str){
+        return str + ' world!'
+    }
+}
+
 socket.on("connection", () => {
     socket.on("login", ({addr}) => {
         vm.text_content += `\n[${addr}] logined.`
@@ -29,6 +35,12 @@ socket.on("connection", () => {
     })
 
     socket.on("rpc-execute!",(data)=>{
-        socket.send('rpc-result!',data + ' world!')
+        data = JSON.parse(data)
+         //{"method":"method_name","params":[xx,123,xxx]}
+        var result = methods[data.method].apply(this,data.params)
+        data["result"] = result;
+        socket.send('rpc-result!',data)
     })
+
+    
 })

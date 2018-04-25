@@ -19,8 +19,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef _OPENCOG_COMMANDER_SCM_H
-#define _OPENCOG_COMMANDER_SCM_H
+#ifndef _OPENCOG_COMMANDER_SERVER_H
+#define _OPENCOG_COMMANDER_SERVER_H
 
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/truthvalue/TruthValue.h>

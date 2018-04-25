@@ -63,6 +63,11 @@ void CommanderServer::init()
 
 //     server->listen(8000, 200);
 // }
+int CommanderServer::rpc_call(Socket* socket, std:string& method, std:string& params)
+{   
+    
+} 
+
 
 int CommanderServer::start_server() 
 {
@@ -71,25 +76,18 @@ int CommanderServer::start_server()
 
     server->onConnection([server](Socket* socket){
 
-        server->broadcast("login", { {"addr", socket->addr()} });
 
-        socket->on("message", [server, socket](JSON data){
-            server->broadcast("message", {{"addr", socket->addr()}, {"content", data}});
-            cout << "receive message: " << data << endl;
-            if(data == "rpc"){
-                cout << "send rpc message: hello" << endl;
-                socket->send("rpc-execute!","hello");
-            };
+        socket->on("rpc-execute!",[server, socket](JSON data){
+            //TODO
+            socket->send("rpc-result!",data.dump() + " world!");
         });
 
-        socket->on("rpc-result!", [server, socket](JSON data){
-             cout << "receive rpc-result!: " << data << endl;
-        });
-
+        std:string result = rpc(&socket,"foo","hello");
+        cout << "result: " << result << endl;
         
 
         socket->on("disconnect", [server, socket](JSON){
-            server->broadcast("leave", {{"addr", socket->addr()}});
+            //server->broadcast("leave", {{"addr", socket->addr()}});
         });
 
         socket->on("close-server", [server](JSON){
