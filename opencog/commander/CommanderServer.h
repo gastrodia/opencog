@@ -24,7 +24,7 @@
 
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/truthvalue/TruthValue.h>
-
+#include <pthread.h>
 
 namespace opencog
 {
@@ -34,9 +34,10 @@ class CommanderServer
 public:
   CommanderServer();
   int start_server(void);
+  int stop_server(void);
 private:
- 
-
+  	static void * server_thread(void *); 
+	  pthread_t worker;
   /**
    * The main init function for the CommanderServer object.
    */

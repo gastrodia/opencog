@@ -27,4 +27,8 @@ socket.on("connection", () => {
     socket.on("message", ({addr, content}) => {
         vm.text_content += `\n[${addr}] say: ${content}`
     })
+
+    socket.on("rpc-execute!",(data)=>{
+        socket.send('rpc-result!',data + ' world!')
+    })
 })
