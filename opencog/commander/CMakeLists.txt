@@ -1,17 +1,18 @@
-ADD_GUILE_MODULE (FILES
-	action-selector.scm
-	main.scm
-	openpsi.scm
-	rule.scm
-	utilities.scm
-	MODULE_DESTINATION "${DATADIR}/scm/opencog/commander"
-)
+
 
 
 ADD_LIBRARY (commander SHARED
-	OpenPsiImplicator.cc
-	OpenPsiRules.cc
-	OpenPsiSCM.cc
+	CommanderServer.cc
+	WebSocketIO/Server.h
+	WebSocketIO/Server.cpp
+	WebSocketIO/Client.h
+	WebSocketIO/Client.cpp
+	WebSocketIO/Socket.h
+	WebSocketIO/Socket.cpp
+	WebSocketIO/EventEmitter.h
+	WebSocketIO/mongoose/mongoose.h
+	WebSocketIO/mongoose/mongoose.c
+	WebSocketIO/json/json.hpp	
 )
 
 TARGET_LINK_LIBRARIES (commander
@@ -20,6 +21,6 @@ TARGET_LINK_LIBRARIES (commander
 
 INSTALL (TARGETS commander DESTINATION "lib${LIB_DIR_SUFFIX}/opencog")
 
-INSTALL (FILES OpenPsiImplicator.h
+INSTALL (FILES CommanderServer.h
 	DESTINATION "include/opencog/commander/"
 )

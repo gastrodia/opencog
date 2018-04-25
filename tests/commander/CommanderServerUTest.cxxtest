@@ -1,5 +1,5 @@
 /*
- * @file tests/planning/CommanderUTest.cxxtest
+ * @file tests/planning/CommanderServerUTest.cxxtest
  *
  * Copyright (C) 2016 OpenCog Foundation
  * All Rights Reserved
@@ -26,25 +26,28 @@
 #include <opencog/guile/SchemeEval.h>
 #include <opencog/util/Logger.h>
 #include <opencog/truthvalue/TruthValue.h>
+#include <opencog/commander/CommanderServer.h>
 
 using namespace opencog;
 
-#define COMMANDER_TEST_PATH PROJECT_SOURCE_DIR "/tests/openpsi"
+#define COMMANDER_TEST_PATH PROJECT_SOURCE_DIR "/tests/commander"
 #define CHKERR \
     TSM_ASSERT("Caught scm error during eval", \
         (false == _scm->eval_error()));
 
-class CommanderUTest : public CxxTest::TestSuite
+class CommanderServerUTest : public CxxTest::TestSuite
 {
 private:
     AtomSpace* _as;
     SchemeEval* _scm;
+    CommanderServer* _opr;
 
 public:
-    CommanderUTest()
+    CommanderServerUTest()
     {
         _as = new AtomSpace();
         _scm = new SchemeEval(_as);
+        _opr = new CommanderServer();
 
         // The scheme environment is reset between each test.
         // Configure scheme load-paths that are common for all tests.
@@ -62,7 +65,7 @@ public:
         logger().set_print_to_stdout_flag(true);
     }
 
-    ~CommanderUTest()
+    ~CommanderServerUTest()
     {
         // Clean Up
         delete _as;
@@ -86,6 +89,18 @@ public:
 
         CHKERR
         TSM_ASSERT_EQUALS("Expected `#t`", 1 , 1);
+
+        logger().info("END TEST: %s", __FUNCTION__);
+    }
+
+    // check start commander server
+    void test_start_commander_server()
+    {
+        logger().info("BEGIN TEST: %s", __FUNCTION__);
+
+        CHKERR
+
+        _opr->start_server();
 
         logger().info("END TEST: %s", __FUNCTION__);
     }

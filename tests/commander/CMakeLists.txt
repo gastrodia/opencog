@@ -5,4 +5,4 @@ LINK_LIBRARIES(
 )
 
 # The tests are ordered in the order they are run during make test.
-ADD_CXXTEST(CommanderUTest)
+ADD_CXXTEST(CommanderServerUTest)
