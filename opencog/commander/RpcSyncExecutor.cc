@@ -1,5 +1,7 @@
 #include <opencog/guile/SchemePrimitive.h>
+#include "crossguid/guid.hpp"
 #include "RpcSyncExecutor.h"
+#include "WebSocketIO/Server.h"
 
 using namespace opencog;
 using namespace std;
@@ -7,11 +9,15 @@ using namespace std;
 RpcSyncExecutor::RpcSyncExecutor(Socket *socket)
 {
     _socket = socket;
-    //todo 
+
+    //todocd 
     //result to map
-    socket->on("rpc-result!", [server, socket](JSON data) {
+    socket->on("rpc-result!", [](JSON data) {
         cout << "receive rpc-result!: " << data.dump() << endl;
-        cout << "receive rpc-result!: " << data.at("result").get<std::string>() << endl;
+        string guid = data.at("guid").get<std::string>();
+        string result = data.at("result").get<std::string>();
+        cout << "receive rpc-result!: " << result << endl;
+        //map[guid] = result;
     });
 }
 
@@ -20,9 +26,7 @@ RpcSyncExecutor::~RpcSyncExecutor()
     logger().debug("[RpcSyncExecutor] destructor");
 }
 
-std::string &RpcSyncExecutor::call(std
-                                   : string &method, std
-                                   : string &params)
+const string &RpcSyncExecutor::call(const string &method, const string &params)
 {
 
     cout << "rpc-execute! hello" << endl;
@@ -31,11 +35,23 @@ std::string &RpcSyncExecutor::call(std
     //todo
     //add uuid
     //add to map
-    socket->send("rpc-execute!", "{\"method\":" + method + ",\"params\":[" + params + "]}");
 
-    while(true){
-        //sleep 0.1
-        //get data from map 
-        //return 
+    string guid = xg::newGuid().str();
+    //_result_map[guid] = NULL;
+    // socket->send("rpc-execute!",
+    //              "{\"method\":" + method +
+    //                  "\"guid\":" + guid +
+    //                  ",\"params\":[" + params + "]}");
+
+    map<string, string>::iterator it;
+    //string result;
+    while (true)
+    {
+        it = _result_map.find(guid);
+        if (it != _result_map.end())
+        {
+            return it->second;
+        }
     }
+
 }

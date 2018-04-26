@@ -25,6 +25,7 @@
 #include <opencog/atomspace/AtomSpace.h>
 #include <opencog/truthvalue/TruthValue.h>
 #include <pthread.h>
+#include "WebSocketIO/Server.h"
 
 namespace opencog
 {

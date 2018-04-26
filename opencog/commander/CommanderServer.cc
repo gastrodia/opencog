@@ -23,8 +23,9 @@
 #include <pthread.h>
 
 #include <opencog/guile/SchemePrimitive.h>
-#include "CommanderServer.h"
 #include "WebSocketIO/Server.h"
+#include "CommanderServer.h"
+#include "RpcSyncExecutor.h"
 
 
 using namespace opencog;
@@ -39,36 +40,6 @@ void CommanderServer::init()
 }
 
 
-// void * CommanderServer::server_thread(void *data)
-// {
-//   auto server = new Server("web");
-
-//     server->onConnection([server](Socket* socket){
-
-//         server->broadcast("login", { {"addr", socket->addr()} });
-
-//         socket->on("message", [server, socket](JSON data){
-//             server->broadcast("message", {{"addr", socket->addr()}, {"content", data}});
-//         });
-
-//         socket->on("disconnect", [server, socket](JSON){
-//             server->broadcast("leave", {{"addr", socket->addr()}});
-//         });
-
-//         socket->on("close-server", [server](JSON){
-//             server->close();
-//         });
-
-//     });
-
-//     server->listen(8000, 200);
-// }
-int CommanderServer::rpc_call(Socket* socket, std:string& method, std:string& params)
-{   
-    
-} 
-
-
 int CommanderServer::start_server() 
 {
     
@@ -81,8 +52,9 @@ int CommanderServer::start_server()
             //TODO
             socket->send("rpc-result!",data.dump() + " world!");
         });
-
-        std:string result = rpc(&socket,"foo","hello");
+    
+        auto rpc = new RpcSyncExecutor(socket);
+        const string result = rpc->call("foo","hello");
         cout << "result: " << result << endl;
         
 
