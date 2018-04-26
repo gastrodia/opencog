@@ -53,9 +53,10 @@ int CommanderServer::start_server()
             socket->send("rpc-result!",data.dump() + " world!");
         });
     
+        cout << "try call client foo(\"hello\")" << endl;
         auto rpc = new RpcSyncExecutor(socket);
-        const string result = rpc->call("foo","hello");
-        cout << "result: " << result << endl;
+        rpc->call("foo","[\"hello\"]");
+        //cout << "result: " << result << endl;
         
 
         socket->on("disconnect", [server, socket](JSON){

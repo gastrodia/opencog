@@ -27,8 +27,11 @@
 #include <opencog/util/Logger.h>
 #include <opencog/truthvalue/TruthValue.h>
 #include <opencog/commander/CommanderServer.h>
+#include <stdio.h>
+#include <map>
 
 using namespace opencog;
+using namespace std;
 
 #define COMMANDER_TEST_PATH PROJECT_SOURCE_DIR "/tests/commander"
 #define CHKERR \
@@ -106,5 +109,23 @@ public:
     }
 
    
+    void test_using_map_in_lambda()
+    {
+        logger().info("BEGIN TEST: %s", __FUNCTION__);
+        map<string, string> tmap = {};
+
+        cout << "tmap: " << &tmap << endl;
+        auto test_lambda = [&tmap]() {
+            cout << "tmap: " << &tmap << endl;
+            //tmap.insert(std::pair<string, string>("abc", "cba"));
+            tmap["abc"] = "cba";
+            cout << tmap.at("abc") << endl;
+            cout << "update tmap success! " << endl;
+            //count << tmap.at(guid) << endl;
+        };
+        test_lambda();
+         TSM_ASSERT_EQUALS("Expected `#t`", "cba", tmap.at("abc"));
+        logger().info("END TEST: %s", __FUNCTION__);
+    };
 
 };
