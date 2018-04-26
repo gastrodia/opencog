@@ -18,7 +18,7 @@ class RpcSyncExecutor
 
   private:
     Socket *_socket;
-    map<string, string> _result_map = {};
+    map<string, string> _result_map;
 };
 
 } // namespace opencog
