@@ -1,38 +1,52 @@
 #include <opencog/guile/SchemePrimitive.h>
 #include "sole/sole.hpp"
 #include "RpcSyncExecutor.h"
+#include "WebSocketIO/json/json.hpp"
 
 using namespace opencog;
 using namespace std;
 
+// for convenience
+using json = nlohmann::json;
+
 RpcSyncExecutor::RpcSyncExecutor(Socket *socket)
 {
-    map<string, string> result_map = {};
+    const map<string, string> result_map = {};
 
     cout << "result_map: " << &result_map << endl;
 
     _socket = socket;
     _result_map = result_map;
 
-    
+    auto update_map = [&result_map](string &guid, string &result) {
 
-    _socket->on("rpc-result!", [&result_map](JSON data) {
+        cout << "result_map: " << &result_map << endl;
+        //result_map.insert(std::pair<string, string>("abc", "cba"));
+        //result_map["abc"] = "cba";
+        //cout << result_map.at("abc") << endl;
+
+        //result_map[guid] = result;
+
+        cout << "update result_map success! " << endl;
+    };
+
+    auto on_result = [&update_map](JSON data) {
         cout << "receive rpc-result!: " << data.dump() << endl;
         string guid = data.at("guid").get<std::string>();
         cout << "receive guid!: " << guid << endl;
         string result = data.at("result").get<std::string>();
         cout << "receive result: " << result << endl;
-
-        cout << "result_map: " << &result_map << endl;
-        result_map.insert(std::pair<string, string>("abc", "cba"));
-        //result_map["abc"] = "cba";
-        cout << result_map.at("abc") << endl;
-
-        result_map[guid] = result;
-
-        cout << "update result_map success! " << endl;
+        update_map(guid,result);
         //count << result_map.at(guid) << endl;
-    });
+    };
+
+    auto data = json::parse(std::string("") +
+                            "{\"method\":" + "\"foo\"" +
+                            ",\"guid\":" + "\"" + "abc" + "\"" +
+                            ",\"result\":" + "\"" + "hello world" + "\"" +
+                            ",\"params\":" + "[\"hello\"]" + "}");
+    //on_result(data);
+    _socket->on("rpc-result!", on_result);
 }
 
 RpcSyncExecutor::~RpcSyncExecutor()
