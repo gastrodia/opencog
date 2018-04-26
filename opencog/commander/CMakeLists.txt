@@ -21,9 +21,14 @@ ADD_LIBRARY (commander SHARED
 	RpcSyncExecutor.cc
 )
 
+
+
 TARGET_LINK_LIBRARIES (commander
 	${ATOMSPACE_LIBRARIES}
 )
+
+
+
 
 INSTALL (TARGETS commander DESTINATION "lib${LIB_DIR_SUFFIX}/opencog")
 

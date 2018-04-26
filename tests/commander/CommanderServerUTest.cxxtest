@@ -27,30 +27,45 @@
 #include <opencog/util/Logger.h>
 #include <opencog/truthvalue/TruthValue.h>
 #include <opencog/commander/CommanderServer.h>
+#include <opencog/commander/WebSocketIO/Client.h>
 #include <stdio.h>
 #include <map>
+#include <pthread.h>
+#include <unistd.h>
 
 using namespace opencog;
 using namespace std;
 
 #define COMMANDER_TEST_PATH PROJECT_SOURCE_DIR "/tests/commander"
-#define CHKERR \
+#define CHKERR                                 \
     TSM_ASSERT("Caught scm error during eval", \
-        (false == _scm->eval_error()));
+               (false == _scm->eval_error()));
+
+void *start_server(void *args)
+{
+    CommanderServer *_opr = new CommanderServer();
+    _opr->start_server();
+}
+
+void *PrintHello(void *threadid)
+{
+    long tid;
+    tid = (long)threadid;
+    printf("Hello World! It's me, thread #%ld!\n", tid);
+    pthread_exit(NULL);
+}
 
 class CommanderServerUTest : public CxxTest::TestSuite
 {
-private:
-    AtomSpace* _as;
-    SchemeEval* _scm;
-    CommanderServer* _opr;
+  private:
+    AtomSpace *_as;
+    SchemeEval *_scm;
 
-public:
+  public:
     CommanderServerUTest()
     {
         _as = new AtomSpace();
         _scm = new SchemeEval(_as);
-        _opr = new CommanderServer();
 
         // The scheme environment is reset between each test.
         // Configure scheme load-paths that are common for all tests.
@@ -77,7 +92,7 @@ public:
         _scm = nullptr;
 
         // Erase the log file if no assertions failed
-        if(!CxxTest::TestTracker::tracker().suiteFailed())
+        if (!CxxTest::TestTracker::tracker().suiteFailed())
             std::remove(logger().get_filename().c_str());
     }
 
@@ -91,7 +106,7 @@ public:
         logger().info("BEGIN TEST: %s", __FUNCTION__);
 
         CHKERR
-        TSM_ASSERT_EQUALS("Expected `#t`", 1 , 1);
+        TSM_ASSERT_EQUALS("Expected `#t`", 1, 1);
 
         logger().info("END TEST: %s", __FUNCTION__);
     }
@@ -102,13 +117,27 @@ public:
         logger().info("BEGIN TEST: %s", __FUNCTION__);
 
         CHKERR
-
-        _opr->start_server();
+        pthread_t thread_number;
+        //pthread_create(&thread_number, NULL, start_server , "hello!");
+        pthread_create(&thread_number, NULL, start_server, (void *)2);
+        sleep(1);
+        auto client = new Client("127.0.0.1", 8000);
+        client->on("connection", [client](JSON) {
+            client->on("rpc-execute!", [&client](JSON data) {
+                client->send("rpc-result!", std::string("") +
+                                                "{\"method\":" + "\"foo\"" +
+                                                ",\"guid\":" + "\"" + "abc" + "\"" +
+                                                ",\"result\":" + "\"" + "hello world" + "\"" +
+                                                ",\"params\":" + "[\"hello\"]" + "}");
+            });
+        });
+        client->poll(200);
+        cout << "sleep(10)" << endl;
+        sleep(100);
 
         logger().info("END TEST: %s", __FUNCTION__);
     }
 
-   
     void test_using_map_in_lambda()
     {
         logger().info("BEGIN TEST: %s", __FUNCTION__);
@@ -124,8 +153,7 @@ public:
             //count << tmap.at(guid) << endl;
         };
         test_lambda();
-         TSM_ASSERT_EQUALS("Expected `#t`", "cba", tmap.at("abc"));
+        TSM_ASSERT_EQUALS("Expected `#t`", "cba", tmap.at("abc"));
         logger().info("END TEST: %s", __FUNCTION__);
     };
-
 };

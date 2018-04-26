@@ -26,8 +26,7 @@
 #include "WebSocketIO/Server.h"
 #include "CommanderServer.h"
 #include "RpcSyncExecutor.h"
-
-
+#include <exception>
 using namespace opencog;
 using namespace std;
 
@@ -39,31 +38,38 @@ void CommanderServer::init()
 {
 }
 
-
-int CommanderServer::start_server() 
+int CommanderServer::start_server()
 {
-    
-      auto server = new Server("web");
 
-    server->onConnection([server](Socket* socket){
+    auto server = new Server("web");
 
+    server->onConnection([server](Socket *socket) {
 
-        socket->on("rpc-execute!",[server, socket](JSON data){
+        socket->on("rpc-execute!", [server, socket](JSON data) {
             //TODO
-            socket->send("rpc-result!",data.dump() + " world!");
+            socket->send("rpc-result!", data.dump() + " world!");
         });
-    
-        cout << "try call client foo(\"hello\")" << endl;
-        auto rpc = new RpcSyncExecutor(socket);
-        rpc->call("foo","[\"hello\"]");
-        //cout << "result: " << result << endl;
-        
 
-        socket->on("disconnect", [server, socket](JSON){
+        auto rpc = new RpcSyncExecutor(socket);
+        cout << "try call client foo(\"hello\")" << endl;
+
+        try
+        {
+            rpc->call("foo", "[\"hello\"]");
+            //cout << "mock call" << endl;
+        }
+        catch (std::exception &e)
+        {
+            cout << "got error" << endl;
+            std::cerr << e.what();
+        }
+        cout << "finish call! " << endl;
+
+        socket->on("disconnect", [server, socket](JSON) {
             //server->broadcast("leave", {{"addr", socket->addr()}});
         });
 
-        socket->on("close-server", [server](JSON){
+        socket->on("close-server", [server](JSON) {
             server->close();
         });
 
@@ -73,4 +79,3 @@ int CommanderServer::start_server()
 
     return 0;
 }
-
