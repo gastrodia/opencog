@@ -61,7 +61,8 @@ int CommanderServer::start_server()
         catch (std::exception &e)
         {
             cout << "got error" << endl;
-            std::cerr << e.what();
+            std::cerr << e.what() << endl;
+            cout << e.what() << endl;
         }
         cout << "finish call! " << endl;
 

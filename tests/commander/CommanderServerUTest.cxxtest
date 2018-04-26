@@ -32,6 +32,9 @@
 #include <map>
 #include <pthread.h>
 #include <unistd.h>
+#include <opencog/commander/WebSocketIO/json/json.hpp>
+
+using json = nlohmann::json;
 
 using namespace opencog;
 using namespace std;
@@ -124,11 +127,11 @@ class CommanderServerUTest : public CxxTest::TestSuite
         auto client = new Client("127.0.0.1", 8000);
         client->on("connection", [client](JSON) {
             client->on("rpc-execute!", [&client](JSON data) {
-                client->send("rpc-result!", std::string("") +
+                client->send("rpc-result!",  json::parse(std::string("") +
                                                 "{\"method\":" + "\"foo\"" +
                                                 ",\"guid\":" + "\"" + "abc" + "\"" +
                                                 ",\"result\":" + "\"" + "hello world" + "\"" +
-                                                ",\"params\":" + "[\"hello\"]" + "}");
+                                                ",\"params\":" + "[\"hello\"]" + "}"));
             });
         });
         client->poll(200);
