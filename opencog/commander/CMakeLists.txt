@@ -14,8 +14,8 @@ ADD_LIBRARY (commander SHARED
 	WebSocketIO/mongoose/mongoose.c
 	WebSocketIO/json/json.hpp	
 
-	crossguid/guid.hpp
-	crossguid/guid.cpp
+	sole/sole.hpp
+	sole/sole.cpp
 
 	CommanderServer.cc
 	RpcSyncExecutor.cc

@@ -1,7 +1,6 @@
 #include <opencog/guile/SchemePrimitive.h>
-#include "crossguid/guid.hpp"
+#include "sole/sole.hpp"
 #include "RpcSyncExecutor.h"
-#include "WebSocketIO/Server.h"
 
 using namespace opencog;
 using namespace std;
@@ -36,7 +35,7 @@ const string &RpcSyncExecutor::call(const string &method, const string &params)
     //add uuid
     //add to map
 
-    string guid = xg::newGuid().str();
+    string guid = sole::uuid0().str();
     //_result_map[guid] = NULL;
     // socket->send("rpc-execute!",
     //              "{\"method\":" + method +
