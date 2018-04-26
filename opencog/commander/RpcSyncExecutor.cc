@@ -1,59 +1,82 @@
 
 #include "sole/sole.hpp"
 #include "RpcSyncExecutor.h"
+#include <iostream>  
+#include <fstream>  
+#include <iomanip>  
 
 using namespace opencog;
 using namespace std;
 
 // for convenience
 
-
 RpcSyncExecutor::RpcSyncExecutor(Socket *socket)
 {
 
     _socket = socket;
-    const map<string, string> result_map = {};
 
+    map<string, string> result_map = {};
+    result_map["abc"] = "cba";
     cout << "result_map: " << &result_map << endl;
 
     cout << "test atomspace" << endl;
-    _as = new AtomSpace();
-    _scm = new SchemeEval(_as);
+
+    AtomSpace *as = new AtomSpace();
+    SchemeEval *scm = new SchemeEval(as);
     cout << "(add-to-load-path \"/usr/local/share/opencog/scm\")" << endl;
-    _scm->eval("(add-to-load-path \"/usr/local/share/opencog/scm\")");
+    scm->eval("(add-to-load-path \"/usr/local/share/opencog/scm\")");
 
     // Load required modules for testing and populate the atomspace
     cout << "(use-modules (opencog))" << endl;
-    _scm->eval("(use-modules (opencog))");
-    cout << "(ConceptNode \"abc\")" << endl;
-    _scm->eval("(ConceptNode \"abc\")");
-    cout << "(prt-atomspace)" << endl;
-    cout << _as->to_string() << endl;
-    cout << "finish test" << endl;
+    scm->eval("(use-modules (opencog))");
+    // cout << "(ConceptNode \"abc\")" << endl;
+    // scm->eval("(ConceptNode \"abc\")");
+    // cout << "(prt-atomspace)" << endl;
+    // cout << as->to_string() << endl;
+    // cout << "finish test" << endl;
 
-    auto update_map = [](string &guid, string &result) {
+    string simple_result;
 
-        //cout << "result_map: " << &result_map << endl;
-        //_scm->eval(std::string("") + "(ConceptNode \"" + guid + "\")");
-        //get_all_atoms
+    auto update_map = [&result_map](string &guid, string &result) {
 
-        //result_map.insert(std::pair<string, string>("abc", "cba"));
-        //result_map["abc"] = "cba";
-        //cout << result_map.at("abc") << endl;
+        cout << "result_map: " << &result_map << endl;
 
-        //result_map[guid] = result;
-
+        result_map[guid] = result;
         cout << "update result_map success! " << endl;
     };
 
-    auto on_result = [&update_map](JSON data) {
+    auto update_as = [&as, &scm, &simple_result](string &guid, string &result) {
+        //scm->eval(std::string("") + "(ConceptNode \"" + guid + "\")");
+        //cout << as->to_string() << endl;
+
+        simple_result = result;
+        cout << "update _as success! " << endl;
+
+    };
+
+    auto update_record_file = [](string &guid, string &result) {
+        ofstream out(string("/tmp/commander-") + guid);
+        if (out.is_open())
+        {
+            out << result;
+            out.close();
+            cout << "write to file success! " << endl;
+        }
+        else
+        {
+            cout << "cant't write file! " << endl;
+        }
+    };
+
+    auto on_result = [&update_record_file](JSON data) {
         cout << "receive rpc-result!: " << data.dump() << endl;
         string guid = data.at("guid").get<std::string>();
         cout << "receive guid!: " << guid << endl;
         string result = data.at("result").get<std::string>();
         cout << "receive result: " << result << endl;
-        update_map(guid, result);
-        //count << result_map.at(guid) << endl;
+        //update_map(guid, result);
+        //update_as(guid, result);
+        update_record_file(guid, result);
     };
 
     _socket->on("rpc-result!", on_result);
@@ -75,7 +98,6 @@ const string &RpcSyncExecutor::call(const string &method, const string &params)
                           ",\"guid\":" + "\"" + guid + "\"" +
                           ",\"params\":" + params + "}";
     cout << "call_msg_str: " << call_msg_str << endl;
-
 
     try
     {
