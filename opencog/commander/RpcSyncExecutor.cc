@@ -1,5 +1,5 @@
 
-#include "sole/sole.hpp"
+#include <opencog/commander/sole/sole.hpp>
 #include "RpcSyncExecutor.h"
 #include <iostream>
 #include <fstream>
@@ -13,15 +13,16 @@ using namespace std;
 
 // for convenience
 
-
-
-
-RpcSyncExecutor::RpcSyncExecutor(Socket *socket)
+RpcSyncExecutor::RpcSyncExecutor(Server *server, Socket *socket)
 {
+
+    _socket = socket;
+    _server = server;
+    cout << "init rpc success: " << &_socket << endl;
 
     pthread_t thread_id = pthread_self();
     cout << "RpcSyncExecutor::RpcSyncExecutor thread_id: " << thread_id << endl;
-    _socket = socket;
+
     auto update_record_file = [this](string &guid, string &result) {
         ofstream out(this->get_task_record_file(guid));
         if (out.is_open())
@@ -56,7 +57,7 @@ RpcSyncExecutor::RpcSyncExecutor(Socket *socket)
 
 RpcSyncExecutor::~RpcSyncExecutor()
 {
-    logger().debug("[RpcSyncExecutor] destructor");
+    //logger().debug("[RpcSyncExecutor] destructor");
 }
 
 string RpcSyncExecutor::get_task_record_file(string &guid)
@@ -64,7 +65,7 @@ string RpcSyncExecutor::get_task_record_file(string &guid)
     return string("/tmp/commander_") + guid;
 };
 
-string &RpcSyncExecutor::call(const string &method, const string &params)
+string RpcSyncExecutor::call(const string &method, const string &params)
 {
     pthread_t thread_id = pthread_self();
     cout << "RpcSyncExecutor::call thread_id: " << thread_id << endl;
@@ -77,60 +78,29 @@ string &RpcSyncExecutor::call(const string &method, const string &params)
                           ",\"guid\":" + "\"" + guid + "\"" +
                           ",\"params\":" + params + "}";
     cout << "call_msg_str: " << call_msg_str << endl;
-
-    try
-    {
-        // do stuff that may throw or fail
-        _socket->send("rpc-execute!", json::parse(call_msg_str));
-        cout << "send msg success" << endl;
-    }
-    catch (const std::runtime_error &re)
-    {
-        // speciffic handling for runtime_error
-        std::cerr << "Runtime error: " << re.what() << std::endl;
-    }
-    catch (const std::exception &ex)
-    {
-        // speciffic handling for all exceptions extending std::exception, except
-        // std::runtime_error which is handled explicitly
-        std::cerr << "Error occurred: " << ex.what() << std::endl;
-    }
-    catch (...)
-    {
-        // catch any other errors (that we have no information about)
-        std::cerr << "Unknown failure occurred. Possible memory corruption" << std::endl;
-    }
-    //_socket->send("rpc-execute!", call_msg_str);
-    cout << "wait.." << endl;
-
+    JSON msg = json::parse(call_msg_str);
+    cout << "msg: " << msg.dump() << endl;
+    cout << "_socket: " << &_socket << endl;
+    _socket->send("rpc-execute!", msg);
+    cout << "send call_msg success! " << endl;
     string result;
 
-    // while (true)
-    // {
-    //     cout << "wait.." << endl;
-    //     sleep(1);
-    //     ifstream in(get_task_record_file(guid));
-    //     if (in.is_open())
-    //     {
-    //         getline(in, result);
-    //         in.close();
-    //         return result;
-    //     }
-    //     else
-    //     {
-    //         cout << "cant't read file! " << endl;
-    //     }
-    // }
+    while (true)
+    {
+        _server->poll();
+        sleep(1);
+        ifstream in(get_task_record_file(guid));
+        if (in.is_open())
+        {
+            getline(in, result);
+            in.close();
+            break;
+        }
+        else
+        {
+            cout << "cant't read file! " << endl;
+        }
+    }
 
-    //std::mutex m;
-    //std::unique_lock<std::mutex> lk(m);
-    // while (true)
-    // {
-    //     cout << "wait! " << endl;
-    //     //lk.unlock();           // 1 解锁互斥量
-    //     pthread_t thread_id = pthread_self();
-    //     cout << "thread_id: " << thread_id << endl;
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // 2 休眠1000ms
-    //     //lk.lock();                                                   // 3 再锁互斥量
-    // }
+    return result;
 }

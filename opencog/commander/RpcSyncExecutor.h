@@ -2,10 +2,6 @@
 #define _OPENCOG_COMMANDER_RpcSyncExecutor_H
 
 #include "WebSocketIO/Server.h"
-#include <opencog/atomspace/AtomSpace.h>
-#include <opencog/guile/SchemePrimitive.h>
-#include <opencog/guile/SchemeEval.h>
-#include <map>
 
 using namespace std;
 namespace opencog
@@ -14,12 +10,13 @@ namespace opencog
 class RpcSyncExecutor
 {
 public:
-  RpcSyncExecutor(Socket *socket);
+  RpcSyncExecutor(Server *server,Socket *socket);
   ~RpcSyncExecutor();
-  string &call(const string &method, const string &params);
+  string call(const string &method, const string &params);
 
 private:
   Socket *_socket;
+  Server *_server;
   string get_task_record_file(string &guid);
 };
 

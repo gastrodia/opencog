@@ -1,0 +1,115 @@
+ map<string, string> result_map = {};
+    result_map["abc"] = "cba";
+    cout << "result_map: " << &result_map << endl;
+
+    cout << "test atomspace" << endl;
+
+    AtomSpace *as = new AtomSpace();
+    SchemeEval *scm = new SchemeEval(as);
+    cout << "(add-to-load-path \"/usr/local/share/opencog/scm\")" << endl;
+    scm->eval("(add-to-load-path \"/usr/local/share/opencog/scm\")");
+
+    // Load required modules for testing and populate the atomspace
+    cout << "(use-modules (opencog))" << endl;
+    scm->eval("(use-modules (opencog))");
+    // cout << "(ConceptNode \"abc\")" << endl;
+    // scm->eval("(ConceptNode \"abc\")");
+    // cout << "(prt-atomspace)" << endl;
+    // cout << as->to_string() << endl;
+    // cout << "finish test" << endl;
+
+    string simple_result;
+
+    auto update_map = [&result_map](string &guid, string &result) {
+
+        cout << "result_map: " << &result_map << endl;
+
+        result_map[guid] = result;
+        cout << "update result_map success! " << endl;
+    };
+
+    auto update_as = [&as, &scm, &simple_result](string &guid, string &result) {
+        //scm->eval(std::string("") + "(ConceptNode \"" + guid + "\")");
+        //cout << as->to_string() << endl;
+
+        simple_result = result;
+        cout << "update _as success! " << endl;
+
+    };
+
+
+
+
+    std::thread t = std::thread([&server]() {
+        std::cout << "main std::thread thread_id: " << pthread_self() << std::endl;
+        server->listen(8000, 200);
+    });
+    while (true)
+    {
+        sleep(1);
+    }
+
+
+
+
+
+
+
+
+        try
+    {
+        // do stuff that may throw or fail
+        _socket->send("rpc-execute!", json::parse(call_msg_str));
+        cout << "send msg success" << endl;
+    }
+    catch (const std::runtime_error &re)
+    {
+        // speciffic handling for runtime_error
+        std::cerr << "Runtime error: " << re.what() << std::endl;
+    }
+    catch (const std::exception &ex)
+    {
+        // speciffic handling for all exceptions extending std::exception, except
+        // std::runtime_error which is handled explicitly
+        std::cerr << "Error occurred: " << ex.what() << std::endl;
+    }
+    catch (...)
+    {
+        // catch any other errors (that we have no information about)
+        std::cerr << "Unknown failure occurred. Possible memory corruption" << std::endl;
+    }
+    //_socket->send("rpc-execute!", call_msg_str);
+
+
+
+        //std::mutex m;
+    //std::unique_lock<std::mutex> lk(m);
+    // while (true)
+    // {
+    //     cout << "wait! " << endl;
+    //     //lk.unlock();           // 1 解锁互斥量
+    //     pthread_t thread_id = pthread_self();
+    //     cout << "thread_id: " << thread_id << endl;
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // 2 休眠1000ms
+    //     //lk.lock();                                                   // 3 再锁互斥量
+    // }
+
+
+        // void test_using_map_in_lambda()
+    // {
+    //     logger().info("BEGIN TEST: %s", __FUNCTION__);
+    //     map<string, string> tmap = {};
+
+    //     cout << "tmap: " << &tmap << endl;
+    //     auto test_lambda = [&tmap]() {
+    //         cout << "tmap: " << &tmap << endl;
+    //         //tmap.insert(std::pair<string, string>("abc", "cba"));
+    //         tmap["abc"] = "cba";
+    //         cout << tmap.at("abc") << endl;
+    //         cout << "update tmap success! " << endl;
+    //         //count << tmap.at(guid) << endl;
+    //     };
+    //     test_lambda();
+    //     TSM_ASSERT_EQUALS("Expected `#t`", "cba", tmap.at("abc"));
+    //     logger().info("END TEST: %s", __FUNCTION__);
+    // };

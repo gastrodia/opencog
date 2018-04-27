@@ -32,8 +32,11 @@
 #include <map>
 #include <pthread.h>
 #include <unistd.h>
+#include <opencog/commander/sole/sole.hpp>
 #include <opencog/commander/WebSocketIO/json/json.hpp>
-
+#include <iostream>
+#include <fstream>
+#include <iomanip>
 using json = nlohmann::json;
 
 using namespace opencog;
@@ -43,12 +46,6 @@ using namespace std;
 #define CHKERR                                 \
     TSM_ASSERT("Caught scm error during eval", \
                (false == _scm->eval_error()));
-
-void *start_server(void *args)
-{
-    CommanderServer *_opr = new CommanderServer();
-    _opr->start_server();
-}
 
 void *PrintHello(void *threadid)
 {
@@ -108,7 +105,6 @@ class CommanderServerUTest : public CxxTest::TestSuite
     {
         logger().info("BEGIN TEST: %s", __FUNCTION__);
 
-        CHKERR
         TSM_ASSERT_EQUALS("Expected `#t`", 1, 1);
 
         logger().info("END TEST: %s", __FUNCTION__);
@@ -119,49 +115,76 @@ class CommanderServerUTest : public CxxTest::TestSuite
     {
         logger().info("BEGIN TEST: %s", __FUNCTION__);
 
-        CHKERR
-        //pthread_create(&thread_number, NULL, start_server , "hello!");
 
-        pthread_t thread_id = pthread_self();
-        cout << "CommanderServerUTest.cxxtest thread_id: " << thread_id << endl;
+        string method = "foo";
+        string params = "[\"hello\"]";
+        string expect_result = "hello world";
 
-        pthread_t thread_number;
-        pthread_create(&thread_number, NULL, start_server, (void *)2);
-        sleep(1);
-        auto client = new Client("127.0.0.1", 8000);
-        client->on("connection", [client](JSON) {
-            client->on("rpc-execute!", [&client](JSON data) {
-                cout << "client receive rpc-execute! call.." << endl;
-                string json_str = std::string("") +
-                                  "{\"method\":" + "\"foo\"" +
-                                  ",\"guid\":" + "\"" + data.at("guid").get<std::string>() + "\"" +
-                                  ",\"result\":" + "\"" + "hello world" + "\"" +
-                                  ",\"params\":" + "[\"hello\"]" + "}";
-                cout << "client send json_str: " << json_str << endl;
-                client->send("rpc-result!", json::parse(json_str));
-            });
+        std::thread t1 = std::thread([]() {
+            CommanderServer *server = new CommanderServer();
+            server->start_server();
         });
-        client->poll(200);
+        t1.detach();
 
+        std::thread t2 = std::thread([]() {
+            auto client = new Client("127.0.0.1", 8000);
+
+            client->on("connection", [client](JSON) {
+                client->on("rpc-execute!", [&client](JSON data) {
+                    string json_str = std::string("") +
+                                      "{\"method\":" + "\"foo\"" +
+                                      ",\"guid\":" + "\"" + data.at("guid").get<std::string>() + "\"" +
+                                      ",\"result\":" + "\"" + "hello world" + "\"" +
+                                      ",\"params\":" + "[\"hello\"]" + "}";
+                    cout << "client send json_str: " << json_str << endl;
+                    client->send("rpc-result!", json::parse(json_str));
+                });
+
+                client->send("invoke-rpc-execute!", json::parse(std::string("") +
+                                                                "{\"method\":" + "\"foo\"" +
+                                                                ",\"guid\":" + "\"" + sole::uuid0().str() + "\"" +
+                                                                ",\"params\":" + "[\"hello\"]" + "}"));
+                client->on("invoke-rpc-result!", [&client](JSON data) {
+                    cout << "recive invoke-rpc-result!: " << data.dump() << endl;
+
+                    ofstream out("/tmp/commander-utest");
+                    if (out.is_open())
+                    {
+                        out << data.at("result").get<std::string>();
+                        out.close();
+                        cout << "write to file success! " << endl;
+                    }
+                    else
+                    {
+                        cout << "cant't write file! " << endl;
+                    }
+
+                });
+            });
+
+            client->poll(200);
+        });
+        t2.detach();
+
+        string result;
+
+        while (true)
+        {
+            sleep(1);
+            ifstream in("/tmp/commander-utest");
+            if (in.is_open())
+            {
+                getline(in, result);
+                in.close();
+                break;
+            }
+            else
+            {
+                cout << "cant't read file! " << endl;
+            }
+        }
+        cout << "assert result: " << result << endl;
+        TSM_ASSERT_EQUALS("Expected `#t`", "hello world", result);
         logger().info("END TEST: %s", __FUNCTION__);
     }
-
-    // void test_using_map_in_lambda()
-    // {
-    //     logger().info("BEGIN TEST: %s", __FUNCTION__);
-    //     map<string, string> tmap = {};
-
-    //     cout << "tmap: " << &tmap << endl;
-    //     auto test_lambda = [&tmap]() {
-    //         cout << "tmap: " << &tmap << endl;
-    //         //tmap.insert(std::pair<string, string>("abc", "cba"));
-    //         tmap["abc"] = "cba";
-    //         cout << tmap.at("abc") << endl;
-    //         cout << "update tmap success! " << endl;
-    //         //count << tmap.at(guid) << endl;
-    //     };
-    //     test_lambda();
-    //     TSM_ASSERT_EQUALS("Expected `#t`", "cba", tmap.at("abc"));
-    //     logger().info("END TEST: %s", __FUNCTION__);
-    // };
 };

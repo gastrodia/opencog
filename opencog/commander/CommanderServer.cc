@@ -19,22 +19,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <stdio.h>
-#include <pthread.h>
-
-#include <opencog/guile/SchemePrimitive.h>
 #include "WebSocketIO/Server.h"
 #include "CommanderServer.h"
 #include "RpcSyncExecutor.h"
 #include <exception>
-#include "sole/sole.hpp"
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-using namespace opencog;
-using namespace std;
+#include <opencog/commander/WebSocketIO/json/json.hpp>
 
 using json = nlohmann::json;
+using namespace opencog;
+using namespace std;
 
 CommanderServer::CommanderServer()
 {
@@ -55,89 +48,26 @@ int CommanderServer::start_server()
 
         cout << "CommanderServer::start_server on connection thread_id: " << pthread_self() << endl;
 
-        //auto rpc = new RpcSyncExecutor(socket);
-
-        socket->on("rpc-execute!", [server, socket](JSON data) {
-            //TODO
-            socket->send("rpc-result!", data.dump() + " world!");
+        socket->on("invoke-rpc-execute!", [server, socket](JSON data) {
+            //for unit test
+            auto rpc = new RpcSyncExecutor(server, socket);
+            cout << "invoke-rpc-execute! " << data.dump() << endl;
+            string method = data.at("method").get<std::string>();
+            string guid = data.at("guid").get<std::string>();
+            //string params = data.at("params").get<std::string>();
+            string params = "[\"hello\"]";
+            //cout << "invoke-rpc-execute! " << data.at("params").get<std::array>() << endl;
+            string result =  rpc->call(method, params);
+            cout << "rpc-call result: " << result << endl;
+            string str = std::string("") +
+                         "{\"method\":\"" + method + "\"" +
+                         ",\"guid\":" + "\"" + guid + "\"" +
+                         ",\"result\":" + "\"" + result + "\"" +
+                         ",\"params\":" + params + "}";
+            JSON msg = json::parse(str);
+            cout << "invoke-rpc-result! " << msg.dump() << endl;
+            socket->send("invoke-rpc-result!", msg);
         });
-
-        try
-        {
-            cout << "try call client foo(\"hello\")" << endl;
-            string guid = sole::uuid0().str();
-
-            string result;
-
-            socket->on("rpc-result!", [](JSON data) {
-                cout << "RpcSyncExecutor::RpcSyncExecutor receive rpc-result! thread_id: " << pthread_self() << endl;
-                cout << "receive rpc-result!: " << data.dump() << endl;
-                string guid = data.at("guid").get<std::string>();
-                cout << "receive guid!: " << guid << endl;
-                string result = data.at("result").get<std::string>();
-                cout << "receive result: " << result << endl;
-                //update_map(guid, result);
-                //update_as(guid, result);
-                ofstream out(string("/tmp/commander_") + guid);
-                if (out.is_open())
-                {
-                    out << result;
-                    out.close();
-                    cout << "write to file success! " << endl;
-                }
-                else
-                {
-                    cout << "cant't write file! " << endl;
-                }
-            });
-
-            std::thread t = std::thread([&result, &socket, &guid]() {
-                std::cout << "call client foo(\"hello\") std::thread thread_id: " << pthread_self() << std::endl;
-                //result = rpc->call("foo", "[\"hello\"]");
-                //rpc->call("foo", "[\"hello\"]");
-
-                //{"method":"method_name","params":[xx,123,xxx]}
-                string method = "foo";
-                string params = "[\"hello\"]";
-                string call_msg_str = std::string("") +
-                                      "{\"method\":\"" + method + "\"" +
-                                      ",\"guid\":" + "\"" + guid + "\"" +
-                                      ",\"params\":" + params + "}";
-                cout << "call_msg_str: " << call_msg_str << endl;
-                socket->send("rpc-execute!", json::parse(call_msg_str));
-                cout << "send msg success" << endl;
-            });
-
-            while (true)
-            {
-                sleep(1);
-                //如果这里能调一次mongoose的event loop是最好的
-                server->poll();
-                ifstream in(string("/tmp/commander_") + guid);
-                if (in.is_open())
-                {
-                    getline(in, result);
-                    in.close();
-                    break;
-                }
-                else
-                {
-                    cout << "cant't read file! " << endl;
-                }
-            }
-
-            std::cout << "call client foo(\"hello\") result: " << result << std::endl;
-            std::cout << "call client foo(\"hello\") get result thread_id: " << pthread_self() << std::endl;
-
-            //cout << "mock call" << endl;
-        }
-        catch (std::exception &e)
-        {
-            cout << "got error" << endl;
-            std::cerr << e.what() << endl;
-            cout << e.what() << endl;
-        }
-        cout << "finish call! " << endl;
 
         socket->on("disconnect", [server, socket](JSON) {
             //server->broadcast("leave", {{"addr", socket->addr()}});
@@ -149,14 +79,7 @@ int CommanderServer::start_server()
 
     });
 
-    std::thread t = std::thread([&server]() {
-        std::cout << "main std::thread thread_id: " << pthread_self() << std::endl;
-        server->listen(8000, 200);
-    });
-    while (true)
-    {
-        sleep(1);
-    }
+    server->listen(8000, 200);
 
     return 0;
 }
