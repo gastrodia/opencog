@@ -120,43 +120,48 @@ class CommanderServerUTest : public CxxTest::TestSuite
         logger().info("BEGIN TEST: %s", __FUNCTION__);
 
         CHKERR
-        pthread_t thread_number;
         //pthread_create(&thread_number, NULL, start_server , "hello!");
+
+        pthread_t thread_id = pthread_self();
+        cout << "CommanderServerUTest.cxxtest thread_id: " << thread_id << endl;
+
+        pthread_t thread_number;
         pthread_create(&thread_number, NULL, start_server, (void *)2);
         sleep(1);
         auto client = new Client("127.0.0.1", 8000);
         client->on("connection", [client](JSON) {
             client->on("rpc-execute!", [&client](JSON data) {
-                client->send("rpc-result!",  json::parse(std::string("") +
-                                                "{\"method\":" + "\"foo\"" +
-                                                ",\"guid\":" + "\"" + "abc" + "\"" +
-                                                ",\"result\":" + "\"" + "hello world" + "\"" +
-                                                ",\"params\":" + "[\"hello\"]" + "}"));
+                cout << "client receive rpc-execute! call.." << endl;
+                string json_str = std::string("") +
+                                  "{\"method\":" + "\"foo\"" +
+                                  ",\"guid\":" + "\"" + data.at("guid").get<std::string>() + "\"" +
+                                  ",\"result\":" + "\"" + "hello world" + "\"" +
+                                  ",\"params\":" + "[\"hello\"]" + "}";
+                cout << "client send json_str: " << json_str << endl;
+                client->send("rpc-result!", json::parse(json_str));
             });
         });
         client->poll(200);
-        cout << "sleep(10)" << endl;
-        sleep(100);
 
         logger().info("END TEST: %s", __FUNCTION__);
     }
 
-    void test_using_map_in_lambda()
-    {
-        logger().info("BEGIN TEST: %s", __FUNCTION__);
-        map<string, string> tmap = {};
+    // void test_using_map_in_lambda()
+    // {
+    //     logger().info("BEGIN TEST: %s", __FUNCTION__);
+    //     map<string, string> tmap = {};
 
-        cout << "tmap: " << &tmap << endl;
-        auto test_lambda = [&tmap]() {
-            cout << "tmap: " << &tmap << endl;
-            //tmap.insert(std::pair<string, string>("abc", "cba"));
-            tmap["abc"] = "cba";
-            cout << tmap.at("abc") << endl;
-            cout << "update tmap success! " << endl;
-            //count << tmap.at(guid) << endl;
-        };
-        test_lambda();
-        TSM_ASSERT_EQUALS("Expected `#t`", "cba", tmap.at("abc"));
-        logger().info("END TEST: %s", __FUNCTION__);
-    };
+    //     cout << "tmap: " << &tmap << endl;
+    //     auto test_lambda = [&tmap]() {
+    //         cout << "tmap: " << &tmap << endl;
+    //         //tmap.insert(std::pair<string, string>("abc", "cba"));
+    //         tmap["abc"] = "cba";
+    //         cout << tmap.at("abc") << endl;
+    //         cout << "update tmap success! " << endl;
+    //         //count << tmap.at(guid) << endl;
+    //     };
+    //     test_lambda();
+    //     TSM_ASSERT_EQUALS("Expected `#t`", "cba", tmap.at("abc"));
+    //     logger().info("END TEST: %s", __FUNCTION__);
+    // };
 };

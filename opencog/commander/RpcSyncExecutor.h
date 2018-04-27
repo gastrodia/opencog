@@ -16,13 +16,11 @@ class RpcSyncExecutor
 public:
   RpcSyncExecutor(Socket *socket);
   ~RpcSyncExecutor();
-  const string &call(const string &method, const string &params);
+  string &call(const string &method, const string &params);
 
 private:
   Socket *_socket;
-  map<string, string> _result_map;
-  AtomSpace *_as;
-  SchemeEval *_scm;
+  string get_task_record_file(string &guid);
 };
 
 } // namespace opencog

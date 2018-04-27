@@ -1,61 +1,29 @@
 
 #include "sole/sole.hpp"
 #include "RpcSyncExecutor.h"
-#include <iostream>  
-#include <fstream>  
-#include <iomanip>  
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <opencog/commander/WebSocketIO/json/json.hpp>
+
+using json = nlohmann::json;
 
 using namespace opencog;
 using namespace std;
 
 // for convenience
 
+
+
+
 RpcSyncExecutor::RpcSyncExecutor(Socket *socket)
 {
 
+    pthread_t thread_id = pthread_self();
+    cout << "RpcSyncExecutor::RpcSyncExecutor thread_id: " << thread_id << endl;
     _socket = socket;
-
-    map<string, string> result_map = {};
-    result_map["abc"] = "cba";
-    cout << "result_map: " << &result_map << endl;
-
-    cout << "test atomspace" << endl;
-
-    AtomSpace *as = new AtomSpace();
-    SchemeEval *scm = new SchemeEval(as);
-    cout << "(add-to-load-path \"/usr/local/share/opencog/scm\")" << endl;
-    scm->eval("(add-to-load-path \"/usr/local/share/opencog/scm\")");
-
-    // Load required modules for testing and populate the atomspace
-    cout << "(use-modules (opencog))" << endl;
-    scm->eval("(use-modules (opencog))");
-    // cout << "(ConceptNode \"abc\")" << endl;
-    // scm->eval("(ConceptNode \"abc\")");
-    // cout << "(prt-atomspace)" << endl;
-    // cout << as->to_string() << endl;
-    // cout << "finish test" << endl;
-
-    string simple_result;
-
-    auto update_map = [&result_map](string &guid, string &result) {
-
-        cout << "result_map: " << &result_map << endl;
-
-        result_map[guid] = result;
-        cout << "update result_map success! " << endl;
-    };
-
-    auto update_as = [&as, &scm, &simple_result](string &guid, string &result) {
-        //scm->eval(std::string("") + "(ConceptNode \"" + guid + "\")");
-        //cout << as->to_string() << endl;
-
-        simple_result = result;
-        cout << "update _as success! " << endl;
-
-    };
-
-    auto update_record_file = [](string &guid, string &result) {
-        ofstream out(string("/tmp/commander-") + guid);
+    auto update_record_file = [this](string &guid, string &result) {
+        ofstream out(this->get_task_record_file(guid));
         if (out.is_open())
         {
             out << result;
@@ -69,6 +37,10 @@ RpcSyncExecutor::RpcSyncExecutor(Socket *socket)
     };
 
     auto on_result = [&update_record_file](JSON data) {
+
+        pthread_t thread_id = pthread_self();
+        cout << "RpcSyncExecutor::RpcSyncExecutor receive rpc-result! thread_id: " << thread_id << endl;
+
         cout << "receive rpc-result!: " << data.dump() << endl;
         string guid = data.at("guid").get<std::string>();
         cout << "receive guid!: " << guid << endl;
@@ -87,8 +59,15 @@ RpcSyncExecutor::~RpcSyncExecutor()
     logger().debug("[RpcSyncExecutor] destructor");
 }
 
-const string &RpcSyncExecutor::call(const string &method, const string &params)
+string RpcSyncExecutor::get_task_record_file(string &guid)
 {
+    return string("/tmp/commander_") + guid;
+};
+
+string &RpcSyncExecutor::call(const string &method, const string &params)
+{
+    pthread_t thread_id = pthread_self();
+    cout << "RpcSyncExecutor::call thread_id: " << thread_id << endl;
 
     //{"method":"method_name","params":[xx,123,xxx]}
     string guid = sole::uuid0().str();
@@ -102,7 +81,8 @@ const string &RpcSyncExecutor::call(const string &method, const string &params)
     try
     {
         // do stuff that may throw or fail
-        _socket->send("rpc-execute!", call_msg_str);
+        _socket->send("rpc-execute!", json::parse(call_msg_str));
+        cout << "send msg success" << endl;
     }
     catch (const std::runtime_error &re)
     {
@@ -121,19 +101,36 @@ const string &RpcSyncExecutor::call(const string &method, const string &params)
         std::cerr << "Unknown failure occurred. Possible memory corruption" << std::endl;
     }
     //_socket->send("rpc-execute!", call_msg_str);
-    cout << "send msg success" << endl;
-    map<string, string>::iterator it;
-    string result = "";
     cout << "wait.." << endl;
+
+    string result;
+
     // while (true)
     // {
     //     cout << "wait.." << endl;
-    //     it = _result_map.find(guid);
-    //     if (it != _result_map.end())
+    //     sleep(1);
+    //     ifstream in(get_task_record_file(guid));
+    //     if (in.is_open())
     //     {
-    //         _result_map.erase(it);
-    //         return it->second;
+    //         getline(in, result);
+    //         in.close();
+    //         return result;
+    //     }
+    //     else
+    //     {
+    //         cout << "cant't read file! " << endl;
     //     }
     // }
-    return "";
+
+    //std::mutex m;
+    //std::unique_lock<std::mutex> lk(m);
+    // while (true)
+    // {
+    //     cout << "wait! " << endl;
+    //     //lk.unlock();           // 1 解锁互斥量
+    //     pthread_t thread_id = pthread_self();
+    //     cout << "thread_id: " << thread_id << endl;
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // 2 休眠1000ms
+    //     //lk.lock();                                                   // 3 再锁互斥量
+    // }
 }
