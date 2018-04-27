@@ -111,6 +111,8 @@ int CommanderServer::start_server()
             while (true)
             {
                 sleep(1);
+                //如果这里能调一次mongoose的event loop是最好的
+                server->poll();
                 ifstream in(string("/tmp/commander_") + guid);
                 if (in.is_open())
                 {

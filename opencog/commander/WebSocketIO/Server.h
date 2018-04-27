@@ -31,7 +31,6 @@ private:
     static void eventHandler(mg_connection*, int, void*);
 
     std::function<void(Socket*)> on_connection_handler = [](Socket*){};
-    void poll();
 
 public:
     Server(std::string document_root);
@@ -40,6 +39,7 @@ public:
     void listen(int, int);
     void listen(int);
     void close();
+    void poll();
 
     void broadcast(std::string, JSON);
 
