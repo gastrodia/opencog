@@ -26,7 +26,7 @@
 #include <opencog/truthvalue/TruthValue.h>
 #include <pthread.h>
 #include "WebSocketIO/Server.h"
-
+using namespace std;
 namespace opencog
 {
 
@@ -36,6 +36,7 @@ public:
   CommanderServer();
   int start_server(void);
   int stop_server(void);
+  string test_atomspace_handler(const string &method, const string &params);
 private:
   	static void * server_thread(void *); 
 	  pthread_t worker;
