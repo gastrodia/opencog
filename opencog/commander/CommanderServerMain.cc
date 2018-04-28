@@ -1,8 +1,10 @@
-#include <opencog/commander/CommanderServer.h>
+#include "CommanderServer.h"
+using namespace opencog;
 int main(int argc, char *argv[])
 {
     
     auto server = new CommanderServer();
 
-    return server->start_server();
+    server->start_server();
+    return  0;
 }
