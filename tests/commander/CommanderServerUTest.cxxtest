@@ -193,11 +193,13 @@ class CommanderServerUTest : public CxxTest::TestSuite
 
         TSM_ASSERT_EQUALS("Expected `#t`", 1, 1);
 
-            std::thread t = std::thread([]() {
+        string guid = sole::uuid0().str();
+
+        std::thread t = std::thread([&guid]() {
             auto client = new Client("127.0.0.1", 8000);
 
-            client->on("connection", [client](JSON) {
-                client->on("rpc-execute!", [&client](JSON data) {
+            client->on("connection", [client,&guid](JSON) {
+                client->on("rpc-execute!", [&client,&guid](JSON data) {
                     string json_str = std::string("") +
                                       "{\"method\":" + "\"foo\"" +
                                       ",\"guid\":" + "\"" + data.at("guid").get<std::string>() + "\"" +
@@ -205,18 +207,47 @@ class CommanderServerUTest : public CxxTest::TestSuite
                                       ",\"params\":" + "[\"hello\"]" + "}";
                     cout << "client send json_str: " << json_str << endl;
                     client->send("rpc-result!", json::parse(json_str));
+                    ofstream out("/tmp/" + guid);
+                    if (out.is_open())
+                    {
+                        out << "success";
+                        out.close();
+                        cout << "write to file success! " << endl;
+                    }
+                    else
+                    {
+                        cout << "cant't write file! " << endl;
+                    }
                 });
 
                 client->send("psi-run!", "");
                 client->on("psi-run-result!", [&client](JSON data) {
                     cout << "recive psi-run-result!: " << data.dump() << endl;
-
                 });
             });
 
             client->poll(200);
         });
         t.detach();
+
+        string result;
+        while (true)
+        {
+            sleep(1);
+            ifstream in("/tmp/"+guid);
+            if (in.is_open())
+            {
+                getline(in, result);
+                in.close();
+                break;
+            }
+            else
+            {
+                cout << "cant't read file! " << endl;
+            }
+        }
+
+        TSM_ASSERT_EQUALS("Expected `#t`", "success", result);
 
         logger().info("END TEST: %s", __FUNCTION__);
     }
