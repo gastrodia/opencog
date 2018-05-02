@@ -74,6 +74,7 @@
     ; FIXME: This is not really newline.
     ((string=? "" str) (cons (make-lexical-token 'NEWLINE location #f) ""))
     ((has-match? "^[ \t]*urge:" str) (result:suffix 'URGE location #f))
+    ((has-match? "^[ \t]*ordered-goal:" str) (result:suffix 'ORD-GOAL location #f))
     ((has-match? "^[ \t]*goal:" str) (result:suffix 'GOAL location #f))
     ((has-match? "^[ \t]*#goal:" str) (result:suffix 'RGOAL location #f))
     ((has-match? "^[ \t]*#!" str) ; This should be checked always before #
@@ -223,7 +224,7 @@
     ; MOVAR = Match Variables grounded in their original words
     ; ? = Comparison tests
     ; VLINE = Vertical Line |
-    (CONCEPT TOPIC RESPONDERS REJOINDERS GAMBIT URGE GOAL RGOAL COMMENT
+    (CONCEPT TOPIC RESPONDERS REJOINDERS GAMBIT URGE ORD-GOAL GOAL RGOAL COMMENT
      SAMPLE_INPUT WHITESPACE
       (right: LPAREN LSBRACKET << ID VAR * ^ < LEMMA LITERAL NUM DICTKEY
               STRING *~n *n UVAR MVAR MOVAR EQUAL NOT RESTART LBRACE VLINE COMMA)
@@ -233,16 +234,16 @@
 
     ; Parsing rules (aka nonterminal symbols)
     (inputs
-      (input) :
-        (if $1 (begin (cog-logger-debug ghost-logger "\nParsed:\n~a\n" $1) #t))
-      (inputs input) :
-        (if $2 (begin (cog-logger-debug ghost-logger "\nParsed:\n~a\n" $2) #t))
+      (input) : #t
+      (inputs input) : #t
     )
 
     (input
       (declarations) : $1
       (urge) : (set-initial-urge (eval-string (string-append "(list " $1 ")")))
       (goal) : (create-top-lv-goal (eval-string (string-append "(list " $1 ")")))
+      (ordered-goal) :
+        (create-top-lv-goal (eval-string (string-append "(list " $1 ")")) #t)
       (rule) : $1
       (enter) : $1
       (COMMENT) : #f
@@ -390,6 +391,10 @@
 
     (urge
       (URGE LPAREN goal-members RPAREN) : $3
+    )
+
+    (ordered-goal
+      (ORD-GOAL LPAREN goal-members RPAREN) : $3
     )
 
     (rule-goal

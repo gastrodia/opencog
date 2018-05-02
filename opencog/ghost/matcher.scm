@@ -48,16 +48,32 @@
   ; returns an action instead of a rule (?)
   (define action-rule-alist '())
 
+  ; For monitoring the status
+  (define rules-eval-cnt 0)
+  (define rules-sat-cnt 0)
+
   ; ----------
   ; Calculate the weight of the rule R [Wcagi]
   (define (calculate-rweight R)
-    (* (cog-stv-strength R)
-       (assoc-ref context-alist (psi-get-context R))
-       (if SKIP-STI
-         ; Weight higher if the rule is in the current topic
-         (if (is-rule-in-topic? R (ghost-get-curr-topic)) 1 0.5)
-         (cog-av-sti R))
-       (psi-urge (psi-get-goal R))))
+    (define strength
+      (if (> strength-weight 0)
+        (* strength-weight (cog-stv-strength R)) 1))
+    (define context
+      (if (> context-weight 0)
+        (* context-weight
+          (assoc-ref context-alist (psi-get-context R))) 1))
+    (define sti (if SKIP-STI
+      ; Weight higher if the rule is in the current topic
+      (if (is-rule-in-topic? R (ghost-get-curr-topic)) 1 0.5)
+      (if (> sti-weight 0)
+        (* sti-weight (cog-av-sti R)) 1)))
+    (define urge
+      (if (> urge-weight 0)
+        (* urge-weight (psi-urge (psi-get-goal R))) 1))
+    (define weight (* strength context sti urge))
+    (cog-logger-debug ghost-logger "The weight of the rule ~a is ~a"
+      (psi-rule-alias R) weight)
+    weight)
 
   ; Calculate the weight of the action A [Wa]
   (define (calculate-aweight A)
@@ -96,16 +112,24 @@
           ; Skip the action if its weight is zero, so that sum-weight-alist
           ; and action-weight-alist do not contain actions that have a zero weight
           (let ((w (calculate-rweight r)))
+            (set! rules-eval-cnt (1+ rules-eval-cnt))
             (if (> w 0)
-              (if (equal? (assoc-ref sum-weight-alist ra) #f)
-                (set! sum-weight-alist (assoc-set! sum-weight-alist ra w))
-                (set! sum-weight-alist (assoc-set! sum-weight-alist ra
-                  (+ (assoc-ref sum-weight-alist ra) w))))
+              (begin
+                (set! rules-sat-cnt (1+ rules-sat-cnt))
+                (if (equal? (assoc-ref sum-weight-alist ra) #f)
+                  (set! sum-weight-alist (assoc-set! sum-weight-alist ra w))
+                  (set! sum-weight-alist (assoc-set! sum-weight-alist ra
+                    (+ (assoc-ref sum-weight-alist ra) w)))))
               (cog-logger-debug ghost-logger
                 "Skipping action with zero weight: ~a" ra))))
       (cog-logger-debug ghost-logger
         "Skipping rule with zero STI/strength: ~a" r)))
     RULES)
+
+  ; Update the status
+  (set! num-rules-found (length RULES))
+  (set! num-rules-evaluated rules-eval-cnt)
+  (set! num-rules-satisfied rules-sat-cnt)
 
   ; Finally calculate the weight of an action
   (for-each
@@ -194,9 +218,20 @@
   The action selector that works with ECAN.
   It evaluates and selects psi-rules from the attentional focus.
 "
+  ; is-psi-rule? uses try-catch so as to avoid getting of
+  ; "#<Invalid handle>" error due to change in the value of StateLinks
+  ; by a different thread, after this thread got a copy of the atoms in
+  ; the attention-focus.
+  (define (is-psi-rule? x)
+    (catch #t
+      (lambda () (psi-rule? x))
+      (lambda (key . args)
+        (format #t "Catched Error at ~a\nError details =\"~a ~a\"\n"
+          (current-source-location) key args) #f)))
+
   (define candidate-rules
     (if ghost-af-only?
-      (filter psi-rule? (cog-af))
+      (filter is-psi-rule? (cog-af))
       (psi-get-rules ghost-component)))
   (define rule-selected (eval-and-select candidate-rules))
 
@@ -210,12 +245,31 @@
   ; TODO: Move this part to OpenPsi?
   ; TODO: This should be created after actually executing the action
   (if (not (null? rule-selected))
-    ; There are psi-rules with no alias, e.g. rules that are not
-    ; defined in GHOST, ignore them, as they are not using 'rejoinders'
-    ; which applies to GHOST rules only
-    (let ((alias (psi-rule-alias rule-selected)))
+    (let ((alias (psi-rule-alias rule-selected))
+          (next-responder (cog-value rule-selected ghost-next-responder))
+          (next-rejoinder (cog-value rule-selected ghost-next-rejoinder))
+          (av-alist (cog-av->alist (cog-av rule-selected))))
+      ; There are psi-rules with no alias, e.g. rules that are not
+      ; defined in GHOST, ignore them, as they are not using 'rejoinders'
+      ; which applies to GHOST rules only
       (if (not (null? alias))
-        (State ghost-last-executed alias))))
+        (State ghost-last-executed alias))
+      ; Stimulate the next rules in the sequence and lower the STI of
+      ; the current one
+      ; Rejoinders has a bigger boost than responder
+      (if (not (null? next-responder))
+        (for-each
+          (lambda (r) (cog-stimulate r (/ default-stimulus 2)))
+          (cog-value->list next-responder)))
+      (if (not (null? next-rejoinder))
+        (for-each
+          (lambda (r) (cog-stimulate r default-stimulus))
+          (cog-value->list next-rejoinder)))
+      ; Lower the STI of the selected one
+      (cog-set-av!
+        rule-selected
+        (cog-new-av 0
+          (cdr (assoc 'lti av-alist)) (cdr (assoc 'vlti av-alist))))))
 
   (List rule-selected))
 

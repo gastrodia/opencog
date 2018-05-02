@@ -72,6 +72,8 @@
 (define ghost-topic (Concept (ghost-prefix "Topic")))
 (define ghost-topic-feature (Predicate (ghost-prefix "Topic Feature")))
 (define ghost-rule-type (Predicate (ghost-prefix "Rule Type")))
+(define ghost-next-responder (Predicate (ghost-prefix "Next Responder")))
+(define ghost-next-rejoinder (Predicate (ghost-prefix "Next Rejoinder")))
 (define strval-rejoinder (StringValue "rejoinder"))
 (define strval-responder (StringValue "responder"))
 (define strval-random-gambit (StringValue "random gambit"))
@@ -89,6 +91,9 @@
 ; A list of top level goals that will be shared with all the rules
 ; defined under it
 (define top-lv-goals '())
+
+; Whether the rules defined under a top level goal is ordered
+(define is-rule-seq #f)
 
 ; How many rules we've seen under a particular top level goal
 (define goal-rule-cnt 0)
@@ -113,6 +118,19 @@
 
 ; Storing values assigned to the user variables for referencing later
 (define uvars '())
+
+; The weights of various parameters used in the action selector
+; For experimental purpose
+(define strength-weight 1)
+(define context-weight 1)
+(define sti-weight 1)
+(define urge-weight 1)
+
+;; --------------------
+;; For monitoring the status
+(define num-rules-found 0)
+(define num-rules-evaluated 0)
+(define num-rules-satisfied 0)
 
 ;; --------------------
 ;; Load the required files
