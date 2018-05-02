@@ -96,7 +96,7 @@ int CommanderServer::start_server()
             socket->send("invoke-rpc-result!", msg);
         });
 
-        socket->on("psi-run!", [server, socket, this](JSON data) {
+        socket->on("psi-run!", [server, socket, this](string demand) {
             // Need to access the atomspace to get it to initialize itself.
             AtomSpace *as = new AtomSpace();
 
@@ -108,7 +108,11 @@ int CommanderServer::start_server()
 
             // Load required modules for testing and populate the atomspace
             cout << "(use-modules (opencog))" << endl;
-            eval->eval("(use-modules (opencog))");
+            eval->eval("(use-modules (opencog) (opencog openpsi))");
+
+            RpcSyncExecutor *rpc = new RpcSyncExecutor(server, socket);
+            define_scheme_primitive("rpc-call", &RpcSyncExecutor::call, rpc);
+
             if (!this->scm_file.empty())
             {
                 string load_file_code = "(load-from-path \"" + this->scm_file + "\")";
@@ -121,21 +125,26 @@ int CommanderServer::start_server()
                 // cout << eval->eval("(test_psi_get_action_1)") << endl;
             }
 
-            RpcSyncExecutor *rpc = new RpcSyncExecutor(server, socket);
+            string psi_run_code = "(psi-run (psi-component  \"" + demand + "\"))";
+            cout << psi_run_code << endl;
+            eval->eval(psi_run_code);
+             
 
-            define_scheme_primitive("rpc-call", &RpcSyncExecutor::call, rpc);
+
             //define_scheme_primitive("rpc-call", &CommanderServer::test_atomspace_handler, this);
-            cout << "(define nnn (cog-new-node 'ConceptNode \"Hello World!\"))" << endl;
-            eval->eval("(define nnn (cog-new-node 'ConceptNode \"Hello World!\"))");
-            cout << "(rpc-call)" << endl;
+            // cout << "(define nnn (cog-new-node 'ConceptNode \"Hello World!\"))" << endl;
+            // eval->eval("(define nnn (cog-new-node 'ConceptNode \"Hello World!\"))");
+            // cout << "(rpc-call)" << endl;
 
-            string rslt = eval->eval("(rpc-call \"foo\" \"[\\\"hello\\\"]\")");
-            cout << "rpc-call result: " << rslt << endl;
-            if (eval->eval_error())
-            {
-                printf("Error: failed evaluation\n");
-                cout << eval->eval_error() << endl;
-            }
+            // string rslt = eval->eval("(rpc-call \"foo\" \"[\\\"hello\\\"]\")");
+            // cout << "rpc-call result: " << rslt << endl;
+            // if (eval->eval_error())
+            // {
+            //     printf("Error: failed evaluation\n");
+            //     cout << eval->eval_error() << endl;
+            // }
+
+
         });
 
         socket->on("disconnect", [server, socket](JSON) {
