@@ -8,5 +8,5 @@ TODO List:
       msg call
 - [x] unit test
 - [ ] benchmark       
-- [ ] load rules from disk , auto reload
+- [x] load rules from disk , auto reload
 - [x] examples

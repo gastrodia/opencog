@@ -34,6 +34,8 @@ class CommanderServer
 {
 public:
   CommanderServer();
+  int port;
+  string scm_file;
   int start_server(void);
   int stop_server(void);
   string test_atomspace_handler(const string &method, const string &params);

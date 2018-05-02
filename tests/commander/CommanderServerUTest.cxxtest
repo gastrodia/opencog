@@ -84,6 +84,8 @@ class CommanderServerUTest : public CxxTest::TestSuite
 
         std::thread t1 = std::thread([]() {
             CommanderServer *server = new CommanderServer();
+            //server->port = 8000;
+            server->scm_file = "/opencog/opencog/tests/commander/foo.scm";
             server->start_server();
         });
         t1.detach();
@@ -114,6 +116,7 @@ class CommanderServerUTest : public CxxTest::TestSuite
         TSM_ASSERT_EQUALS("Expected `#t`", 1, 1);
 
         logger().info("END TEST: %s", __FUNCTION__);
+        
     }
 
     // check start commander server

@@ -109,10 +109,21 @@ int CommanderServer::start_server()
             // Load required modules for testing and populate the atomspace
             cout << "(use-modules (opencog))" << endl;
             eval->eval("(use-modules (opencog))");
+            if (!this->scm_file.empty())
+            {
+                string load_file_code = "(load-from-path \"" + this->scm_file + "\")";
+                cout << load_file_code << endl;
+                eval->eval(load_file_code);
+                //check
+                // string check_code = "(test_psi_get_action_1)";
+                // cout << "###########################################################################################" << endl;
+                // cout << check_code << endl;
+                // cout << eval->eval("(test_psi_get_action_1)") << endl;
+            }
 
             RpcSyncExecutor *rpc = new RpcSyncExecutor(server, socket);
 
-            define_scheme_primitive("rpc-call", &RpcSyncExecutor::call,rpc);
+            define_scheme_primitive("rpc-call", &RpcSyncExecutor::call, rpc);
             //define_scheme_primitive("rpc-call", &CommanderServer::test_atomspace_handler, this);
             cout << "(define nnn (cog-new-node 'ConceptNode \"Hello World!\"))" << endl;
             eval->eval("(define nnn (cog-new-node 'ConceptNode \"Hello World!\"))");
@@ -137,7 +148,14 @@ int CommanderServer::start_server()
 
     });
 
-    server->listen(8000, 200);
+    if (port)
+    {
+        server->listen(port, 200);
+    }
+    else
+    {
+        server->listen(8000, 200);
+    }
 
     return 0;
 }
