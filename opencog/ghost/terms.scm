@@ -15,6 +15,19 @@
     (list v c (list v1) (list l))))
 
 ; ----------
+(define (word-apos STR)
+"
+  Occurrence of a word with an apostrophe, e.g. I'm, it's etc.
+  Should be matched literally.
+"
+  (let* (; This turns ’ into ' just to treat them as the same thing
+         (nstr (regexp-substitute/global #f "’" STR 'pre "'" 'post))
+         (v1 (Variable (gen-var STR #f)))
+         (l (WordNode nstr))
+         (v (list (TypedVariable v1 (Type "WordNode")))))
+    (list v (list) (list v1) (list l))))
+
+; ----------
 (define (lemma STR)
 "
   Lemma occurrence, aka canonical form of a term.
@@ -421,14 +434,3 @@
 
   ; Return an atom
   (True))
-
-; ----------
-(define-public (reuse LABEL)
-"
-  The function for reusing the output of another rule labeled with LABEL.
-"
-  (define rule (cog-chase-link 'ListLink 'ImplicationLink
-                 (Concept (string-append psi-prefix-str (cog-name LABEL)))))
-  (if (null? rule)
-      (cog-logger-error ghost "Failed to find the GHOST rule \"~a\"" (cog-name LABEL))
-      (psi-get-action (car rule))))
